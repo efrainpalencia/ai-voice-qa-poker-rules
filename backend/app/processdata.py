@@ -1,49 +1,62 @@
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
-from langchain_community.vectorstores import Chroma
-from config import Config
+import re
+from langchain_community.document_loaders import PyPDFLoader
+from app.config import Config
 
-# Debugger
-file_path = Config.FILE_PATH
+
+def extract_rules_from_text(text):
+    """
+    Extracts rules from the raw text using regex, capturing rule numbers, titles, and content.
+    Handles sub-rules like 53-A, 53-B, and examples.
+    """
+    rule_pattern = re.compile(
+        r'(?P<rule_number>\d{1,2}(-[A-Z])?): (?P<title>.*?)\n(?P<content>.*?)(?=\n\d{1,2}(-[A-Z])?:|$)', re.DOTALL
+    )
+    rules = []
+
+    for match in rule_pattern.finditer(text):
+        rule_number = match.group("rule_number").strip()
+        title = match.group("title").strip()
+        content = match.group("content").strip()
+
+        if not content or len(content) < 20:  # Ensure valid content
+            continue
+
+        # Identify examples
+        example_pattern = re.compile(
+            r'(?P<example>Example \d+: .*?)(?=Example \d+:|\Z)', re.DOTALL)
+        examples = [ex.group("example").strip()
+                    for ex in example_pattern.finditer(content)]
+
+        rules.append({
+            "rule_number": rule_number,
+            "title": title,
+            "content": content,
+            "examples": examples if examples else []
+        })
+
+    return rules
 
 
 def process_data(file_path):
     """
-    Loads a PDF file, extracts text content and metadata, 
-    and returns structured data for storage in Chroma.
-
-    Args:
-        file_path (str): Path to the PDF file.
-
-    Returns:
-        List[dict]: A list of dictionaries with 'content' and 'metadata' keys.
+    Loads the PDF, extracts structured rule data, and returns a list of rules.
     """
     try:
         loader = PyPDFLoader(file_path)
         pages = loader.load()
 
-        processed_pages = []
-        for page in pages:
-            processed_pages.append({
-                "content": page.page_content,
-                "metadata": page.metadata
-            })
+        full_text = "\n".join([page.page_content for page in pages])
+        structured_rules = extract_rules_from_text(full_text)
 
-        # Debug output to verify extraction
-        # print(f"Processed Pages: {processed_pages}")
-        # print(f"Extracted Metadata from first 5 pages:\n")
-        # for i in range(min(5, len(processed_pages))):  # Limit preview to first 5 pages
-        #     print(f"Page {i + 1} Metadata: {processed_pages[i]['metadata']}")
-        #     # Print first 200 characters
-        #     print(
-        #         f"Page {i + 1} Content Snippet: {processed_pages[i]['content'][:200]}\n")
-
-        return processed_pages
+        return structured_rules  # Ensure this returns a list of dicts with 'rule_number'
 
     except Exception as e:
         print(f"Error processing PDF: {e}")
         return []
 
 
-# Debugger
-print(process_data(file_path))
+# Debugging
+file_path = Config.FILE_PATH
+rules = process_data(file_path)
+for rule in rules[:5]:  # Print first 5 rules to verify structure
+    print(rule)
