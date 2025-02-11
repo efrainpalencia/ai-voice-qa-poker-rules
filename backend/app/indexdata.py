@@ -1,22 +1,23 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from app.processdata import process_data
+from app.config import Config
 
 # Load and process the poker rules document
-file_path = "2024 Poker TDA Rules PDF Longform Vers 1.0 FINAL.pdf"
+file_path = Config.FILE_PATH
 rules = process_data(file_path)
 
 
-def index_poker_rules(rules, chunk_size=500, chunk_overlap=50):
+def index_poker_rules(rules, chunk_size=1000, chunk_overlap=150):
     """
     Indexes poker rules into a vector store.
 
     Args:
         rules (list): List of extracted poker rules from the document.
-        chunk_size (int): Maximum size of each text chunk (default: 500 characters).
-        chunk_overlap (int): Overlap between chunks to preserve context (default: 50 characters).
+        chunk_size (int): Maximum size of each text chunk (default: 700 characters).
+        chunk_overlap (int): Overlap between chunks to preserve context (default: 100 characters).
 
     Returns:
         InMemoryVectorStore: The vector store containing indexed embeddings.
@@ -27,17 +28,14 @@ def index_poker_rules(rules, chunk_size=500, chunk_overlap=50):
 
     indexed_docs = []
     for rule in rules:
-        if "rule_number" not in rule or "title" not in rule:
-            print(f"⚠️ Skipping rule due to missing data: {rule}")
-            continue  # Skip rules missing necessary metadata
-
-        rule_number = rule["rule_number"]
-        title = rule["title"]
-        content = rule["content"]
+        rule_number = rule.get("rule_number")
+        title = rule.get("title")
+        content = rule.get("content", "").strip()
         examples = rule.get("examples", [])
 
-        if not content.strip():
-            print(f"Skipping rule {rule_number} due to missing content")
+        # Skip invalid entries
+        if not rule_number or not title or not content:
+            print(f"⚠️ Skipping rule due to missing data: {rule}")
             continue
 
         # Split the main rule content into smaller chunks
@@ -62,6 +60,10 @@ def index_poker_rules(rules, chunk_size=500, chunk_overlap=50):
                     )
                 )
 
+    # Ensure we have indexed documents before creating vector store
+    if not indexed_docs:
+        print("⚠️ No valid documents found to index. Vector store will be empty.")
+
     # Indexing documents with OpenAI embeddings
     vector_store = InMemoryVectorStore.from_documents(
         indexed_docs, OpenAIEmbeddings()
@@ -75,10 +77,12 @@ vector_store = index_poker_rules(rules)
 
 # Example Querying
 query = "What is the rule for action out of turn?"
-docs = vector_store.similarity_search(query, k=2)
+docs = vector_store.similarity_search(query, k=5)  # Retrieve top 5 results
 
 # Print results
-for doc in docs:
+print("\n--- Query Results ---")
+for i, doc in enumerate(docs, start=1):
     print(
-        f'Rule {doc.metadata["rule_number"]} - {doc.metadata["title"]}\nContent: {doc.page_content[:300]}\n'
+        f"{i}. Rule {doc.metadata['rule_number']} - {doc.metadata['title']}\n"
+        f"   Content Snippet: {doc.page_content[:300]}\n"
     )

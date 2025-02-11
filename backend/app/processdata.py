@@ -9,7 +9,8 @@ def extract_rules_from_text(text):
     Handles sub-rules like 53-A, 53-B, and examples.
     """
     rule_pattern = re.compile(
-        r'(?P<rule_number>\d{1,2}(-[A-Z])?): (?P<title>.*?)\n(?P<content>.*?)(?=\n\d{1,2}(-[A-Z])?:|$)', re.DOTALL
+        r'(?P<rule_number>\d{1,2}(-[A-Z])?): (?P<title>.*?)\n(?P<content>.*?)(?=\n\d{1,2}(-[A-Z])?:|$)',
+        re.DOTALL
     )
     rules = []
 
@@ -18,20 +19,24 @@ def extract_rules_from_text(text):
         title = match.group("title").strip()
         content = match.group("content").strip()
 
+        # Identify and separate examples
+        example_pattern = re.compile(
+            r'(Example \d+: .*?)(?=\nExample \d+:|\Z)', re.DOTALL)
+        examples = [ex.group(1).strip()
+                    for ex in example_pattern.finditer(content)]
+
+        # Remove examples from content
+        for ex in examples:
+            content = content.replace(ex, "").strip()
+
         if not content or len(content) < 20:  # Ensure valid content
             continue
-
-        # Identify examples
-        example_pattern = re.compile(
-            r'(?P<example>Example \d+: .*?)(?=Example \d+:|\Z)', re.DOTALL)
-        examples = [ex.group("example").strip()
-                    for ex in example_pattern.finditer(content)]
 
         rules.append({
             "rule_number": rule_number,
             "title": title,
             "content": content,
-            "examples": examples if examples else []
+            "examples": examples
         })
 
     return rules
@@ -56,7 +61,8 @@ def process_data(file_path):
 
 
 # Debugging
-file_path = Config.FILE_PATH
-rules = process_data(file_path)
-for rule in rules[:5]:  # Print first 5 rules to verify structure
-    print(rule)
+# file_path = Config.FILE_PATH
+# rules = process_data(file_path)
+# for rule in rules[:5]:  # Print first 5 rules to verify structure
+#     print(rule)
+# print(f"Total extracted rules: {len(rules)}")

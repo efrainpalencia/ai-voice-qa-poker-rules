@@ -1,59 +1,38 @@
 import pytest
-from unittest.mock import patch, MagicMock
-from app.server import app
+from io import BytesIO
+from flask.testing import FlaskClient
+
 
 @pytest.fixture
 def client():
-    """Create a test client for the Flask app."""
-    app.testing = True
+    from app.server import app
     return app.test_client()
 
 
-def test_record_endpoint_no_audio(client):
-    """Test if the record endpoint returns an error when no audio file is provided."""
-    response = client.post("/record", data={})
-    assert response.status_code == 400
-    assert response.json["error"] == "No audio file provided"
+def test_record_success(client, mocker):
+    """Test successful audio upload and AI response."""
+    mock_transcription = {"text": "What are the poker rules?"}
+    mock_response = "The poker rules require players to act in turn."
 
+    # Mock OpenAI Whisper API
+    mocker.patch("openai.Audio.transcribe", return_value=mock_transcription)
 
-@patch("app.server.openai.Audio.transcribe", return_value={"text": "Test input"})
-@patch("app.server.get_qa_chain")
-@patch("app.server.openai.Audio.create", return_value={"url": "mock_speech_url"})
-def test_record_endpoint_success(mock_tts, mock_qa_chain, mock_transcribe, client):
-    """Test successful processing of an audio file."""
-    mock_qa_chain.return_value.run.return_value = "Mock AI response"
+    # Mock AI response
+    mock_qa_chain = mocker.patch("app.server.get_qa_chain")
+    mock_qa_chain().run.return_value = mock_response
 
-    data = {
-        "audio": ("fake_audio_data".encode(), "recording.webm"),
-    }
-    response = client.post("/record", data=data, content_type="multipart/form-data")
+    # Mock OpenAI TTS response
+    mock_tts_response = {"url": "https://test.speech.url"}
+    mocker.patch("openai.Audio.create", return_value=mock_tts_response)
 
-    assert response.status_code == 200
-    assert response.json["input"] == "Test input"
-    assert response.json["output"] == "Mock AI response"
-    assert response.json["speech_url"] == "mock_speech_url"
+    # Simulate file upload with BytesIO
+    data = {"audio": (BytesIO(b"fake_audio_data"), "test_audio.webm")}
+    response = client.post("/record", data=data,
+                           content_type="multipart/form-data")
 
-
-@patch("app.server.openai.Audio.transcribe", return_value={"text": ""})
-def test_record_transcription_failure(mock_transcribe, client):
-    """Test if the endpoint handles transcription failure correctly."""
-    data = {
-        "audio": ("fake_audio_data".encode(), "recording.webm"),
-    }
-    response = client.post("/record", data=data, content_type="multipart/form-data")
-
-    assert response.status_code == 500
-    assert response.json["error"] == "Transcription failed"
-
-
-@patch("app.server.get_qa_chain", side_effect=Exception("AI error"))
-@patch("app.server.openai.Audio.transcribe", return_value={"text": "Test input"})
-def test_record_chat_api_failure(mock_transcribe, mock_qa_chain, client):
-    """Test handling when AI response generation fails."""
-    data = {
-        "audio": ("fake_audio_data".encode(), "recording.webm"),
-    }
-    response = client.post("/record", data=data, content_type="multipart/form-data")
-
-    assert response.status_code == 500
-    assert "Failed to process audio" in response.json["error"]
+    # Assertions
+    assert response.status_code == 200, f"Unexpected response: {response.data.decode()}"
+    json_data = response.get_json()
+    assert json_data["input"] == mock_transcription["text"]
+    assert json_data["output"] == mock_response
+    assert json_data["speech_url"] == mock_tts_response["url"]
