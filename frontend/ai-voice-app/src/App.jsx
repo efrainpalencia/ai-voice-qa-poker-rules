@@ -7,17 +7,26 @@ function App() {
   const [transcript, setTranscript] = useState(""); // Live transcript
   const [finalResponse, setFinalResponse] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); // Loading state
   const recorderRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // API Base URL (update for deployment)
+  const API_URL = "http://localhost:5000/record"; // Change if deployed
+
+  // Format long responses
+  const formatResponse = (text) => {
+    return text.length > 500 ? text.substring(0, 500) + "..." : text;
+  };
+
   const startRecording = async () => {
     try {
-      // Start recording audio
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new RecordRTC(stream, { type: "audio" });
       recorder.startRecording();
       recorderRef.current = recorder;
       setRecording(true);
+      setError(null); // Clear previous errors
 
       // Initialize Web Speech API for real-time transcription
       const recognition = new window.webkitSpeechRecognition() || new window.SpeechRecognition();
@@ -27,7 +36,7 @@ function App() {
       recognition.onresult = (event) => {
         const lastResult = event.results[event.results.length - 1];
         if (lastResult.isFinal) {
-          setTranscript(prev => prev + " " + lastResult[0].transcript);
+          setTranscript((prev) => prev + " " + lastResult[0].transcript);
         }
       };
       recognition.start();
@@ -41,7 +50,6 @@ function App() {
   const stopRecording = async () => {
     if (!recorderRef.current) return;
 
-    // Stop Web Speech API transcription
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -52,19 +60,38 @@ function App() {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
 
-      try {
-        const res = await axios.post("/record", formData);
-        setFinalResponse(res.data);
-      } catch (err) {
-        console.error("Error sending audio:", err);
-        setError("Failed to process audio. Please try again.");
-      }
-
       setRecording(false);
 
-      // Stop the media stream to release the microphone
+
+      // ✅ Fix: Ensure `getTracks` only runs if recorder.stream exists
+      if (recorder.stream) {
+        const tracks = recorder.stream.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+      setLoading(true); // Start loading
+
+      try {
+        const res = await axios.post(API_URL, formData);
+        setFinalResponse(res.data);
+
+        // Handle empty response case
+        if (!res.data || !res.data.input.trim()) {
+          setError("No speech detected. Try speaking louder or closer to the mic.");
+          setFinalResponse(null);
+        }
+      } catch (err) {
+        console.error("Error sending audio:", err);
+        let errorMsg = "Failed to process audio. Please try again.";
+        if (err.response) {
+          errorMsg = err.response.data.error || errorMsg;
+        }
+        setError(errorMsg);
+      }
+
+      setLoading(false); // Stop loading
+
       const tracks = recorder.stream.getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
     });
   };
 
@@ -82,6 +109,8 @@ function App() {
         {recording ? "Stop Recording" : "Start Recording"}
       </button>
 
+      {loading && <p className="mt-4 text-blue-600">Processing audio...</p>}
+
       {recording && (
         <div className="mt-4 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg">
           <h2 className="text-gray-600 font-medium">Live Transcript:</h2>
@@ -92,8 +121,10 @@ function App() {
       {finalResponse && (
         <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg">
           <p className="text-gray-600"><strong>You:</strong> {finalResponse.input}</p>
-          <p className="text-gray-800 font-medium"><strong>AI:</strong> {finalResponse.output}</p>
-          <audio className="mt-4 w-full" controls src={finalResponse.speech_url} />
+          <p className="text-gray-800 font-medium"><strong>AI:</strong> {formatResponse(finalResponse.output)}</p>
+          {finalResponse.speech_url && (
+            <audio className="mt-4 w-full" controls src={finalResponse.speech_url} />
+          )}
         </div>
       )}
     </div>

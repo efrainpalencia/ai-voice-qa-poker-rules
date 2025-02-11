@@ -1,97 +1,120 @@
 import openai
 import os
 import logging
-from app import app
+import subprocess
+import PyPDF2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from app.chains import get_qa_chain
-from app.config import Config
+from config import Config
 
-# Initialize Flask app
+# 🔥 Initialize Flask App
 app = Flask(__name__)
 CORS(app)
 
-# Set OpenAI API key
+# ✅ Set OpenAI API Key
 openai.api_key = Config.OPENAI_API_KEY
 
-# Configure logging
+# 🔍 Configure Logging
 logging.basicConfig(level=logging.INFO)
+
+# 📖 Load Poker TDA Rules PDF at Startup
+PDF_PATH = Config.FILE_PATH
+pdf_text = ""
+
+try:
+    with open(PDF_PATH, "rb") as pdf_file:
+        reader = PyPDF2.PdfReader(pdf_file)
+        pdf_text = " ".join(
+            [page.extract_text() for page in reader.pages if page.extract_text()]
+        )
+        logging.info("📖 Poker TDA Rules PDF loaded successfully.")
+except Exception as e:
+    logging.error(f"❌ Error loading PDF: {str(e)}")
 
 
 @app.route("/record", methods=["POST"])
 def record():
-    """Handles audio file upload, transcribes, and generates AI response."""
+    """Handles audio file upload, converts, transcribes, and generates AI response."""
 
     if not openai.api_key:
         logging.error("❌ Missing OpenAI API key")
         return jsonify({"error": "Missing OpenAI API key"}), 500
 
-    # Log request headers & files for debugging
-    logging.info(
-        f"📩 Received request: headers={dict(request.headers)}, files={request.files.keys()}")
-
-    file = request.files.get("audio")  # Safely get file
-
+    file = request.files.get("audio")
     if not file:
         logging.error("❌ No audio file received")
         return jsonify({"error": "No audio file provided"}), 400
 
-    logging.info(f"✅ Received file: {file.filename}")
-
-    if file.filename == "":
-        logging.error("❌ Empty file uploaded")
-        return jsonify({"error": "Empty file uploaded"}), 400
-
     file_path = "recording.webm"
+    wav_path = "recording.wav"
 
     try:
+        # 🔥 Save the uploaded audio file
         file.save(file_path)
         logging.info("✅ Audio file saved successfully")
 
-        # Transcribe using OpenAI Whisper API
-        with open(file_path, "rb") as audio_file:
-            transcript = openai.Audio.transcribe(
-                model="whisper-1", file=audio_file)
+        # 🎙️ Convert WebM to WAV
+        subprocess.run(
+            ["ffmpeg", "-i", file_path, "-ac", "1",
+                "-ar", "16000", wav_path, "-y"],
+            check=True,
+        )
+        logging.info("🔄 Converted WebM to WAV")
 
-        logging.info(f"📝 Transcription: {transcript}")
+        # 📝 Transcribe using OpenAI Whisper API
+        with open(wav_path, "rb") as audio_file:
+            transcript = openai.audio.transcriptions.create(
+                model="whisper-1", file=audio_file
+            )
 
-        text = transcript.get("text", "").strip()
+        text = transcript.text.strip()
         if not text:
             logging.error("❌ Transcription failed: Empty text")
             return jsonify({"error": "Transcription failed"}), 500
 
-        # Get AI-generated response
-        output = get_qa_chain().run(text)
-        logging.info(f"🤖 AI Response: {output}")
+        logging.info(f"📝 Transcription: {text}")
 
-        # Convert AI response to speech using OpenAI TTS
-        speech_url = None
-        try:
-            speech_response = openai.Audio.create(
-                model="tts-1",
-                voice="alloy",
-                input=output
-            )
-            speech_url = speech_response["url"]
-            logging.info(f"🔊 TTS Generation successful: {speech_url}")
-        except Exception as tts_error:
-            logging.error(f"❌ TTS Generation failed: {tts_error}")
+        # 🎯 Ask OpenAI, using both the question and PDF context
+        prompt = f"""
+        You are an expert in poker tournament rules, specifically the 2024 Poker TDA Rules.
+        You will answer questions based **only** on the official TDA rulebook.
 
-        response_data = {
-            "input": text,
-            "output": output,
-            "speech_url": speech_url
-        }
+        🃏 **User's Question**: "{text}"
+        
+        📖 **Relevant Poker Rules (from the PDF)**:
+        "{pdf_text[:4000]}"  # Sending only a chunk to fit OpenAI's context limit.
+
+        🎯 **Provide a clear, rule-based answer using only official TDA rules**.
+        """
+
+        openai_response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a poker rules assistant."},
+                {"role": "user", "content": prompt},
+            ],
+        )
+
+        ai_answer = openai_response.choices[0].message.content.strip()
+        logging.info(f"🤖 AI Response: {ai_answer}")
+
+        response_data = {"input": text, "output": ai_answer}
         return jsonify(response_data), 200
+
+    except subprocess.CalledProcessError as e:
+        logging.error(f"❌ FFmpeg conversion error: {str(e)}")
+        return jsonify({"error": "Audio conversion failed"}), 500
 
     except Exception as e:
         logging.error(f"❌ Error processing audio: {str(e)}")
         return jsonify({"error": "Failed to process audio"}), 500
 
     finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            logging.info("🗑️ Temporary audio file deleted")
+        # 🔥 Safe file cleanup
+        for file in [file_path, wav_path]:
+            if os.path.exists(file):
+                os.remove(file)
+                logging.info(f"🗑️ Deleted temporary file: {file}")
 
 
 if __name__ == "__main__":
