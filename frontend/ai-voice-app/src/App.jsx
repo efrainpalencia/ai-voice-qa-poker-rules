@@ -4,20 +4,17 @@ import axios from "axios";
 
 function App() {
   const [recording, setRecording] = useState(false);
-  const [transcript, setTranscript] = useState(""); // Live transcript
+  const [transcript, setTranscript] = useState("");
   const [finalResponse, setFinalResponse] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
+  const [speechUrl, setSpeechUrl] = useState(""); // State for audio URL
   const recorderRef = useRef(null);
   const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
 
-  // API Base URL (update for deployment)
-  const API_URL = "http://localhost:5000/record"; // Change if deployed
-
-  // Format long responses
-  const formatResponse = (text) => {
-    return text.length > 500 ? text.substring(0, 500) + "..." : text;
-  };
+  const API_URL = "http://localhost:5000/record"; // Update if deployed
+  const TTS_BASE_URL = "http://localhost:5000"; // Ensure full path
 
   const startRecording = async () => {
     try {
@@ -26,9 +23,8 @@ function App() {
       recorder.startRecording();
       recorderRef.current = recorder;
       setRecording(true);
-      setError(null); // Clear previous errors
+      setError(null);
 
-      // Initialize Web Speech API for real-time transcription
       const recognition = new window.webkitSpeechRecognition() || new window.SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -61,43 +57,52 @@ function App() {
       formData.append("audio", blob, "recording.webm");
 
       setRecording(false);
+      setLoading(true);
 
-
-      // ✅ Fix: Ensure `getTracks` only runs if recorder.stream exists
+      // ✅ Ensure `getTracks` only runs if stream exists
       if (recorder.stream) {
         const tracks = recorder.stream.getTracks();
         tracks.forEach(track => track.stop());
       }
-      setLoading(true); // Start loading
 
       try {
         const res = await axios.post(API_URL, formData);
         setFinalResponse(res.data);
 
-        // Handle empty response case
-        if (!res.data || !res.data.input.trim()) {
-          setError("No speech detected. Try speaking louder or closer to the mic.");
-          setFinalResponse(null);
+        if (res.data.speech_url) {
+          const fullSpeechURL = `${TTS_BASE_URL}${res.data.speech_url}`;
+          console.log("✅ Speech URL:", fullSpeechURL);
+
+          setSpeechUrl(fullSpeechURL); // ✅ Update speech state
+
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.src = fullSpeechURL;
+              audioRef.current.load();
+              audioRef.current.play()
+                .then(() => console.log("🔊 Audio playing successfully"))
+                .catch((err) => {
+                  console.warn("⚠️ Audio play error:", err);
+                  setError("Failed to play audio. Please check your browser settings.");
+                });
+            }
+          }, 1000); // Slight delay to ensure UI updates
+        } else {
+          console.warn("⚠️ No speech URL received.");
         }
+
       } catch (err) {
         console.error("Error sending audio:", err);
-        let errorMsg = "Failed to process audio. Please try again.";
-        if (err.response) {
-          errorMsg = err.response.data.error || errorMsg;
-        }
-        setError(errorMsg);
+        setError("Failed to process audio. Please try again.");
       }
 
-      setLoading(false); // Stop loading
-
-      const tracks = recorder.stream.getTracks();
-      tracks.forEach((track) => track.stop());
+      setLoading(false);
     });
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800">Voice Assistant</h1>
+      <h1 className="text-3xl font-bold text-gray-800">TDA Poker Rules Assistant</h1>
 
       {error && <p className="mt-3 text-red-500">{error}</p>}
 
@@ -111,19 +116,17 @@ function App() {
 
       {loading && <p className="mt-4 text-blue-600">Processing audio...</p>}
 
-      {recording && (
-        <div className="mt-4 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg">
-          <h2 className="text-gray-600 font-medium">Live Transcript:</h2>
-          <p className="text-gray-800">{transcript || "Listening..."}</p>
-        </div>
-      )}
-
       {finalResponse && (
         <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg">
           <p className="text-gray-600"><strong>You:</strong> {finalResponse.input}</p>
-          <p className="text-gray-800 font-medium"><strong>AI:</strong> {formatResponse(finalResponse.output)}</p>
-          {finalResponse.speech_url && (
-            <audio className="mt-4 w-full" controls src={finalResponse.speech_url} />
+          <p className="text-gray-800 font-medium"><strong>AI:</strong> {finalResponse.output}</p>
+
+          {/* ✅ Ensure audio player is properly displayed */}
+          {speechUrl && (
+            <audio ref={audioRef} className="mt-4 w-full" controls>
+              <source src={speechUrl} type="audio/mpeg" />
+              Your browser does not support the audio element.
+            </audio>
           )}
         </div>
       )}
