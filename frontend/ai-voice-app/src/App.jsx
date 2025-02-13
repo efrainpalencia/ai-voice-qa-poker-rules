@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import RecordRTC from "recordrtc";
 import axios from "axios";
+import Spinner from "./components/Spinner/Spinner";
 
 function App() {
   const [recording, setRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
   const [finalResponse, setFinalResponse] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,10 +14,11 @@ function App() {
   const recognitionRef = useRef(null);
   const audioRef = useRef(null);
 
-  const API_URL = "http://localhost:5000/record";
+  const BASE_API_URL = import.meta.env.VITE_BASE_API_URL
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const resetState = () => {
-    setTranscript("");
+    // setTranscript("");
     setFinalResponse(null);
     setAudioKey((prev) => prev + 1);
     if (audioRef.current) {
@@ -41,12 +42,6 @@ function App() {
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "en-US";
-      recognition.onresult = (event) => {
-        const lastResult = event.results[event.results.length - 1];
-        if (lastResult.isFinal) {
-          setTranscript((prev) => prev + " " + lastResult[0].transcript);
-        }
-      };
       recognition.start();
       recognitionRef.current = recognition;
     } catch (err) {
@@ -82,7 +77,7 @@ function App() {
           setTimeout(() => {
             if (audioRef.current) {
               // ✅ Reset audio element and ensure proper playback
-              audioRef.current.src = `http://localhost:5000${res.data.speech_url}?t=${Date.now()}`;
+              audioRef.current.src = `${BASE_API_URL}${res.data.speech_url}?t=${Date.now()}`;
               audioRef.current.load();
 
               // ✅ Wait until audio is ready before playing
@@ -131,14 +126,8 @@ function App() {
         {recording ? "Stop Recording" : "Start Recording"}
       </button>
 
-      {loading && <p className="mt-4 text-blue-600 dark:bg-slate-800 dark:text-white">Processing audio...</p>}
+      {loading && <Spinner />}
 
-      {transcript && (
-        <div className="mt-4 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg dark:bg-slate-600 dark:text-white">
-          <h2 className="text-gray-600 font-medium dark:text-white">Live Transcript:</h2>
-          <p className="text-gray-800 dark:text-white">{transcript || "Listening..."}</p>
-        </div>
-      )}
 
       {finalResponse && (
         <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg dark:bg-slate-600 dark:text-white">
