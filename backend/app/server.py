@@ -7,7 +7,6 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from config import Config
 
-# Initialize Flask App
 app = Flask(__name__)
 CORS(app)
 
@@ -18,80 +17,68 @@ logging.basicConfig(level=logging.INFO)
 STATIC_DIR = "static"
 os.makedirs(STATIC_DIR, exist_ok=True)
 
-# 🔥 **Load Poker TDA Rules PDF at Startup**
-PDF_PATH = Config.FILE_PATH
-pdf_text = ""
+# ✅ Load Multiple Rulebooks
+RULEBOOKS = {}
 
-try:
-    with open(PDF_PATH, "rb") as pdf_file:
-        reader = PyPDF2.PdfReader(pdf_file)
-        pdf_text = " ".join([page.extract_text()
-                            for page in reader.pages if page.extract_text()])
-        logging.info("📖 Poker TDA Rules PDF loaded successfully.")
-except Exception as e:
-    logging.error(f"❌ Error loading PDF: {str(e)}")
+
+def load_rulebook(name, path):
+    """Loads a rulebook from a PDF file."""
+    try:
+        with open(path, "rb") as pdf_file:
+            reader = PyPDF2.PdfReader(pdf_file)
+            RULEBOOKS[name] = " ".join(
+                [page.extract_text() for page in reader.pages if page.extract_text()])
+            logging.info(f"📖 {name} loaded successfully.")
+    except Exception as e:
+        logging.error(f"❌ Error loading {name}: {str(e)}")
+
+
+# 🔥 Load Rulebooks at Startup
+load_rulebook("poker_tda", Config.TDA_FILE_PATH)
+# Path to alternate rulebook
+load_rulebook("poker_hwhr", Config.HWHR_FILE_PATH)
 
 
 @app.route("/record", methods=["POST"])
 def record():
-    """Handles audio file upload, converts, transcribes, and generates AI response with TTS."""
-    if not openai.api_key:
-        logging.error("❌ Missing OpenAI API key")
-        return jsonify({"error": "Missing OpenAI API key"}), 500
+    """Handles audio file upload, transcribes it, generates AI response, and returns TTS audio."""
+    rulebook_key = request.form.get("rulebook", "poker_tda")
+    rulebook_text = RULEBOOKS.get(rulebook_key, "")
 
     file = request.files.get("audio")
-    if not file:
-        logging.error("❌ No audio file received")
-        return jsonify({"error": "No audio file provided"}), 400
-
-    file_path = "recording.webm"
-    wav_path = "recording.wav"
+    file_path, wav_path = "recording.webm", "recording.wav"
 
     try:
         file.save(file_path)
-        logging.info("✅ Audio file saved successfully")
-
-        # 🔄 Convert WebM to WAV
         subprocess.run(["ffmpeg", "-i", file_path, "-ac", "1",
-                       "-ar", "16000", wav_path, "-y"], check=True)
-        logging.info("🔄 Converted WebM to WAV")
+                        "-ar", "16000", wav_path, "-y"], check=True)
 
-        # 📝 **Transcribe the Audio**
         with open(wav_path, "rb") as audio_file:
             transcript = openai.audio.transcriptions.create(
                 model="whisper-1", file=audio_file
             )
 
         text = transcript.text.strip()
-        logging.info(f"📝 Transcription: {text}")
 
-        if not text:
-            logging.error("❌ Transcription failed: Empty text")
-            return jsonify({"error": "Transcription failed"}), 500
-
-        # 🎯 **Step 2: Generate AI Response Using PDF Data**
+        # 🎯 **Generate AI Response**
         prompt = f"""
-        You are a poker rules assistant. Professional poker supervisors will make decisions
-        based on your recommendations. Answer the user's question based on the 2024 Poker TDA Rules.
-        Be concise, accurate, and professional. If a specific rule applies, cite it directly.
+        You are a poker rules assistant. Answer the user's question based on the selected rulebook.
+        Be concise and accurate in your answers.
 
         User's Question: "{text}"
 
-        📖 **Relevant Poker Rules (from the Official TDA Rulebook):**
-        "{pdf_text}"
-
-        💡 Provide an answer based on the above rulebook. You may interpret the rule based on the question
-        given to you.
+        📖 **Relevant Rules**:
+        "{rulebook_text}"
         """
         openai_response = openai.chat.completions.create(
             model="gpt-4o",
-            messages=[{"role": "system", "content": "You are a poker rules assistant. Use the provided rules strictly."},
+            messages=[{"role": "system", "content": "You are a poker rules assistant."},
                       {"role": "user", "content": prompt}]
         )
         ai_answer = openai_response.choices[0].message.content.strip()
         logging.info(f"🤖 AI Response: {ai_answer}")
 
-        # 🔊 **Step 3: Generate TTS Audio**
+        # 🔊 **Generate TTS Audio**
         speech_filename = "response.mp3"
         speech_path = os.path.join(STATIC_DIR, speech_filename)
 
@@ -102,6 +89,7 @@ def record():
                 input=ai_answer
             )
 
+            # ✅ Save the TTS audio file
             with open(speech_path, "wb") as audio_file:
                 audio_file.write(tts_response.content)
 
@@ -111,10 +99,13 @@ def record():
             logging.error(f"❌ TTS Generation failed: {tts_error}")
             speech_path = None
 
+        # ✅ **Send the Correct Audio URL to Frontend**
+        speech_url = f"/tts/{speech_filename}" if speech_path else None
+
         response_data = {
             "input": text,
             "output": ai_answer,
-            "speech_url": f"/tts/{speech_filename}" if speech_path else None
+            "speech_url": speech_url
         }
         return jsonify(response_data), 200
 
@@ -130,14 +121,18 @@ def record():
         os.remove(file_path) if os.path.exists(file_path) else None
         os.remove(wav_path) if os.path.exists(wav_path) else None
 
-
 # ✅ **Serve the TTS Audio File**
+
+
 @app.route("/tts/<filename>", methods=["GET"])
 def serve_tts_audio(filename):
     """Serve the generated TTS audio file."""
     audio_path = os.path.join(STATIC_DIR, filename)
+
     if os.path.exists(audio_path):
+        logging.info(f"✅ Serving TTS file: {audio_path}")
         return send_file(audio_path, mimetype="audio/mpeg")
+
     else:
         logging.error(f"❌ TTS file not found: {audio_path}")
         return jsonify({"error": "Audio file not found"}), 404

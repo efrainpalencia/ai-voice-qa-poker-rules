@@ -8,15 +8,27 @@ function App() {
   const [finalResponse, setFinalResponse] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [speechUrl, setSpeechUrl] = useState(""); // State for audio URL
+  const [selectedRulebook, setSelectedRulebook] = useState("poker_tda");
+  const [audioKey, setAudioKey] = useState(0); // Force re-render audio
   const recorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioRef = useRef(null);
 
-  const API_URL = "http://localhost:5000/record"; // Update if deployed
-  const TTS_BASE_URL = "http://localhost:5000"; // Ensure full path
+  const API_URL = "http://localhost:5000/record";
+
+  const resetState = () => {
+    setTranscript("");
+    setFinalResponse(null);
+    setAudioKey((prev) => prev + 1);
+    if (audioRef.current) {
+      audioRef.current.src = "";
+      audioRef.current.load();
+    }
+  };
 
   const startRecording = async () => {
+    resetState();
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new RecordRTC(stream, { type: "audio" });
@@ -55,42 +67,37 @@ function App() {
       const blob = recorder.getBlob();
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
+      formData.append("rulebook", selectedRulebook);
 
       setRecording(false);
       setLoading(true);
-
-      // ✅ Ensure `getTracks` only runs if stream exists
-      if (recorder.stream) {
-        const tracks = recorder.stream.getTracks();
-        tracks.forEach(track => track.stop());
-      }
 
       try {
         const res = await axios.post(API_URL, formData);
         setFinalResponse(res.data);
 
         if (res.data.speech_url) {
-          const fullSpeechURL = `${TTS_BASE_URL}${res.data.speech_url}`;
-          console.log("✅ Speech URL:", fullSpeechURL);
-
-          setSpeechUrl(fullSpeechURL); // ✅ Update speech state
+          console.log("✅ New Speech URL:", res.data.speech_url);
 
           setTimeout(() => {
             if (audioRef.current) {
-              audioRef.current.src = fullSpeechURL;
+              // ✅ Reset audio element and ensure proper playback
+              audioRef.current.src = `http://localhost:5000${res.data.speech_url}?t=${Date.now()}`;
               audioRef.current.load();
-              audioRef.current.play()
-                .then(() => console.log("🔊 Audio playing successfully"))
-                .catch((err) => {
-                  console.warn("⚠️ Audio play error:", err);
-                  setError("Failed to play audio. Please check your browser settings.");
-                });
+
+              // ✅ Wait until audio is ready before playing
+              audioRef.current.oncanplaythrough = () => {
+                audioRef.current.play().catch((err) =>
+                  console.error("🔊 Playback failed:", err)
+                );
+              };
+            } else {
+              console.warn("⚠️ Audio player not found.");
             }
-          }, 1000); // Slight delay to ensure UI updates
+          }, 500);
         } else {
           console.warn("⚠️ No speech URL received.");
         }
-
       } catch (err) {
         console.error("Error sending audio:", err);
         setError("Failed to process audio. Please try again.");
@@ -101,33 +108,43 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800">TDA Poker Rules Assistant</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6 dark:bg-slate-800 dark:text-white">
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Poker Rules Assistant</h1>
+
+      {/* Dropdown to Select Rulebook */}
+      <select
+        className="mt-4 p-2 border rounded dark:bg-slate-600 dark:text-white"
+        value={selectedRulebook}
+        onChange={(e) => setSelectedRulebook(e.target.value)}
+      >
+        <option value="poker_tda">TDA Poker Rulebook</option>
+        <option value="poker_hwhr">HWHR Poker Rulebook</option>
+      </select>
 
       {error && <p className="mt-3 text-red-500">{error}</p>}
 
       <button
         onClick={recording ? stopRecording : startRecording}
-        className="mt-6 px-6 py-3 text-white font-semibold rounded-lg shadow-md transition 
-        bg-blue-600 hover:bg-blue-700 focus:ring focus:ring-blue-300"
+        className={`mt-6 px-6 py-3 text-white font-semibold rounded-lg shadow-md transition 
+        ${recording ? "bg-red-600 hover:bg-red-700 focus:ring-red-300" : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-300"}`}
       >
         {recording ? "Stop Recording" : "Start Recording"}
       </button>
 
-      {loading && <p className="mt-4 text-blue-600">Processing audio...</p>}
+      {loading && <p className="mt-4 text-blue-600 dark:bg-slate-800 dark:text-white">Processing audio...</p>}
+
+      {transcript && (
+        <div className="mt-4 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg dark:bg-slate-600 dark:text-white">
+          <h2 className="text-gray-600 font-medium dark:text-white">Live Transcript:</h2>
+          <p className="text-gray-800 dark:text-white">{transcript || "Listening..."}</p>
+        </div>
+      )}
 
       {finalResponse && (
-        <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg">
-          <p className="text-gray-600"><strong>You:</strong> {finalResponse.input}</p>
-          <p className="text-gray-800 font-medium"><strong>AI:</strong> {finalResponse.output}</p>
-
-          {/* ✅ Ensure audio player is properly displayed */}
-          {speechUrl && (
-            <audio ref={audioRef} className="mt-4 w-full" controls>
-              <source src={speechUrl} type="audio/mpeg" />
-              Your browser does not support the audio element.
-            </audio>
-          )}
+        <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg dark:bg-slate-600 dark:text-white">
+          <p className="text-gray-600 dark:text-white"><strong>You:</strong> {finalResponse.input}</p>
+          <p className="text-gray-800 font-medium dark:text-white"><strong>AI:</strong> {finalResponse.output}</p>
+          <audio ref={audioRef} key={audioKey} className="mt-4 w-full" controls />
         </div>
       )}
     </div>
