@@ -14,14 +14,17 @@ const App: React.FC = () => {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedRulebook, setSelectedRulebook] = useState<string>("poker_tda");
-  const [audioKey, setAudioKey] = useState<number>(0);
+  const [selectedRulebook, setSelectedRulebook] = useState("poker_tda");
+  const [audioKey, setAudioKey] = useState(0);
   const recorderRef = useRef<RecordRTC | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
   const API_URL = import.meta.env.VITE_API_URL;
+
+  console.log("✅ BASE_API_URL:", import.meta.env.VITE_BASE_API_URL);
+  console.log("✅ API_URL:", import.meta.env.VITE_API_URL);
 
   const startRecording = async () => {
     resetAudioState(setFinalResponse, setAudioKey, audioRef);
@@ -38,7 +41,7 @@ const App: React.FC = () => {
         window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         setError(
-          "Speech recognition is not supported in your browser. Please use Chrome."
+          "Speech recognition is not supported in this browser. Please use Chrome."
         );
         return;
       }
@@ -50,7 +53,8 @@ const App: React.FC = () => {
       recognition.start();
       recognitionRef.current = recognition;
     } catch (err) {
-      console.error(err);
+      console.error("Error accessing microphone:", err);
+      setError("Failed to access microphone. Please check permissions.");
     }
   };
 
@@ -73,16 +77,18 @@ const App: React.FC = () => {
 
       try {
         const res = await axios.post(API_URL, formData);
+        console.log("🔍 API Response:", res.data);
         setFinalResponse(res.data);
+
         if (res.data.speech_url) {
-          const validUrl = `${BASE_API_URL}${res.data.speech_url}`.replace(
-            /\/undefined$/,
-            ""
-          );
-          handleAudioPlayback(audioRef, validUrl, BASE_API_URL);
+          handleAudioPlayback(audioRef, res.data.speech_url, BASE_API_URL);
+        } else {
+          console.warn("⚠️ No valid `speech_url` received.");
+          setError("Failed to retrieve audio response.");
         }
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error sending audio:", err);
+        setError("Failed to process audio. Please try again.");
       }
 
       setLoading(false);
@@ -91,18 +97,25 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6 dark:bg-slate-800 dark:text-white">
-      <h1 className="text-3xl font-bold">Poker Rules Assistant</h1>
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+        Poker Rules Assistant
+      </h1>
+
       <RulebookSelector
         selectedRulebook={selectedRulebook}
         setSelectedRulebook={setSelectedRulebook}
       />
+
       {error && <p className="mt-3 text-red-500">{error}</p>}
+
       <RecordingControls
         recording={recording}
         startRecording={startRecording}
         stopRecording={stopRecording}
       />
+
       {loading && <Spinner />}
+
       {finalResponse && (
         <div className="mt-6 p-4 bg-white rounded-lg shadow-lg w-full max-w-lg dark:bg-slate-600 dark:text-white">
           <p className="text-gray-600 dark:text-white">
@@ -113,9 +126,10 @@ const App: React.FC = () => {
           </p>
           <audio
             ref={audioRef}
-            key={audioKey}
             className="mt-4 w-full"
+            src={`${BASE_API_URL}${finalResponse.speech_url}?t=${Date.now()}`}
             controls
+            autoPlay
           />
         </div>
       )}

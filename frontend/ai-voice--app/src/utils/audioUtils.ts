@@ -16,17 +16,24 @@ export const resetAudioState = (
     speechUrl: string,
     baseApiUrl: string
   ) => {
-    if (audioRef.current) {
-      audioRef.current.src = `${baseApiUrl}${speechUrl}?t=${Date.now()}`;
-      audioRef.current.load();
-  
-      audioRef.current.oncanplaythrough = () => {
-        audioRef.current.play().catch((err) =>
-          console.error("🔊 Playback failed:", err)
-        );
-      };
-    } else {
-      console.warn("⚠️ Audio player not found.");
+    if (!audioRef.current) {
+      console.warn("⚠️ Audio element not found. Retrying...");
+      return;
     }
+  
+    const fullUrl = `${baseApiUrl}${speechUrl}?cache_bust=${Date.now()}`;
+    console.log("🎯 Final Audio URL:", fullUrl);
+  
+    audioRef.current.src = fullUrl;
+  
+    audioRef.current.oncanplaythrough = () => {
+      audioRef.current?.play().catch((err) =>
+        console.error("🔊 Playback failed:", err)
+      );
+    };
+  
+    audioRef.current.load();
   };
+  
+  
   

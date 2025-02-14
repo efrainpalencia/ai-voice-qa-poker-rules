@@ -14,8 +14,8 @@ openai.api_key = Config.OPENAI_API_KEY
 logging.basicConfig(level=logging.INFO)
 
 # ✅ Ensure 'static/' Directory Exists
-STATIC_DIR = "static"
-os.makedirs(STATIC_DIR, exist_ok=True)
+AUDIO_DIR = "audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
 # ✅ Load Multiple Rulebooks
 RULEBOOKS = {}
@@ -80,7 +80,7 @@ def record():
 
         # 🔊 **Generate TTS Audio**
         speech_filename = "response.mp3"
-        speech_path = os.path.join(STATIC_DIR, speech_filename)
+        speech_path = os.path.join(AUDIO_DIR, speech_filename)
 
         try:
             tts_response = openai.audio.speech.create(
@@ -127,7 +127,7 @@ def record():
 @app.route("/tts/<filename>", methods=["GET"])
 def serve_tts_audio(filename):
     """Serve the generated TTS audio file."""
-    audio_path = os.path.join(STATIC_DIR, filename)
+    audio_path = os.path.join(AUDIO_DIR, filename)
 
     if os.path.exists(audio_path):
         logging.info(f"✅ Serving TTS file: {audio_path}")
