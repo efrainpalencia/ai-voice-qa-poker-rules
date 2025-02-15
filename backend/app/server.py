@@ -62,14 +62,37 @@ def record():
 
         # 🎯 **Generate AI Response**
         prompt = f"""
-        You are a poker rules assistant. Answer the user's question based on the selected rulebook.
-        Be concise and accurate in your answers.
+        You are a poker rules assistant who provides clear, concise, and structured answers.
+        Poker professionals have to make critical decisions that adhere to poker standards
+        found in the following rulebook: {rulebook_text}.  
+        
+        💡 **Instructions**:
+        Your job is to assist these professionals. At times you may be asked to directly 
+        reference a rule. At times you may be given a scenario, in which case you may have to 
+        use inference to find the solution.
 
-        User's Question: "{text}"
-
-        📖 **Relevant Rules**:
-        "{rulebook_text}"
+        - **Use Markdown-style formatting** for clarity.  
+        - **Respond in a structured format** using:
+          - **Headings** for key concepts.  
+          - **Bullet points** for lists.  
+          - **Paragraphs** for explanations.  
+        - **Examples and clarifications** where necessary.  
+        - Keep answers **concise yet informative**.
+        - approprate spacing and line height for improved readability.
+        
+        🎯 **Example Format**:
+        
+        ### 🃏 **Poker Rule Overview**
+        - **Term**: Directional Play  
+        - **Definition**: Directional play ensures actions follow the natural order of gameplay.  
+        - **Example**: If Player A acts out of turn, their action may be binding depending on the scenario.
+        
+        🔔 **Important**: Only use the information from the rulebook.
+        
+        Please answer the user's question below:  
+         📖 **User's Question**: "{text}"
         """
+
         openai_response = openai.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "system", "content": "You are a poker rules assistant."},

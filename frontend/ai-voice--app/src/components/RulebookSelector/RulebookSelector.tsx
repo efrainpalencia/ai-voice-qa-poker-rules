@@ -13,13 +13,13 @@ const RulebookSelector: React.FC<RulebookSelectorProps> = ({
     <div>
       <label
         htmlFor="rulebook"
-        className="block text-gray-700 dark:text-white font-semibold mb-2"
+        className="block text-gray-700 dark:text-white font-semibold mb-4 mt-8"
       >
         Select a Rulebook:
       </label>
       <select
         id="rulebook"
-        className="p-2 border rounded dark:bg-slate-600 dark:text-white"
+        className="p-2 mb-12 border rounded dark:bg-slate-600 dark:text-white"
         value={selectedRulebook}
         onChange={(e) => setSelectedRulebook(e.target.value)}
       >
