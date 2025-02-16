@@ -41,13 +41,13 @@ def record():
 
         text = transcript.text.strip()
 
-        # 🎯 **Generate AI Response**
+        # **Generate AI Response**
         prompt = f"""
         You are a poker rules assistant who provides clear, concise, and structured answers.
         Poker professionals have to make critical decisions that adhere to poker standards
         found in the following rulebook: {rulebook_text}.  
         
-        💡 **Instructions**:
+        **Instructions**:
         Your job is to assist these professionals. At times you may be asked to directly 
         reference a rule. At times you may be given a scenario, in which case you may have to 
         use inference to find the solution. 
@@ -71,11 +71,11 @@ def record():
         - Keep answers **concise yet informative**.
         - approprate spacing and line height for improved readability.
 
-        🔔 **Important**: Only use the information from the rulebook.
+        **Important**: Only use the information from the rulebook. Also, refrain from using emojis.
         
-        🎯 **Example Format**:
+        **Example Format**:
         
-        ### 🃏 **Poker Rule Overview**
+        ### **Poker Rule Overview**
         - **Term**: Directional Play  
         - **Definition**: Directional play ensures actions follow the natural order of gameplay.  
         - **Example**: If Player A acts out of turn, their action may be binding depending on the scenario.
