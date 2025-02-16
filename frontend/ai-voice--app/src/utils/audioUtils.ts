@@ -1,15 +1,15 @@
 export const resetAudioState = (
-    setFinalResponse: (response: null) => void,
-    setAudioKey: (key: (prev: number) => number) => void,
-    audioRef: React.RefObject<HTMLAudioElement>
-  ) => {
-    setFinalResponse(null);
-    setAudioKey((prev) => prev + 1);
-    if (audioRef.current) {
-      audioRef.current.src = "";
-      audioRef.current.load();
-    }
-  };
+  setFinalResponse: React.Dispatch<React.SetStateAction<any>>,
+  audioRef: React.RefObject<HTMLAudioElement>
+) => {
+  setFinalResponse(null);
+  if (audioRef.current) {
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    audioRef.current.src = "";
+  }
+};
+
   
   export const handleAudioPlayback = (
     audioRef: React.RefObject<HTMLAudioElement>,

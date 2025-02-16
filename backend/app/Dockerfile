@@ -1,22 +1,25 @@
-# Use official Python image
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
 # Install dependencies
-COPY requirements.txt ./
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    ffmpeg \
+    libmagic-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application files
+# Install Python requirements
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
 COPY . .
 
-# Expose the application port
+# Expose port for Flask
 EXPOSE 5000
 
-# Run the application with Gunicorn for production
+# Start the application with Gunicorn
 CMD ["gunicorn", "-c", "gunicorn_config.py", "app:app"]

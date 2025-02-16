@@ -12,21 +12,21 @@ const App: React.FC = () => {
   const [finalResponse, setFinalResponse] = useState<{
     input: string;
     output: string;
+    speech_url?: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedRulebook, setSelectedRulebook] = useState("poker_tda");
-  const [audioKey, setAudioKey] = useState(0);
+
   const recorderRef = useRef<RecordRTC | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null!);
 
   const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
   const API_URL = import.meta.env.VITE_API_URL;
 
   const startRecording = async () => {
-    resetAudioState(setFinalResponse, setAudioKey, audioRef);
-
+    resetAudioState(setFinalResponse, audioRef);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new RecordRTC(stream, { type: "audio" });
@@ -138,7 +138,7 @@ const App: React.FC = () => {
               <strong className="mr-2">NOTE:</strong>
             </p>
             <span className="italic">
-              Complex scenarios may need to be focused down into seperate
+              Complex scenarios may need to be focused down into separate
               questions.
             </span>
 
@@ -178,13 +178,15 @@ const App: React.FC = () => {
           <div className="text-gray-800 font-medium dark:text-white prose dark:prose-invert text-sm sm:text-base">
             <ReactMarkdown>{finalResponse.output}</ReactMarkdown>
           </div>
-          <audio
-            ref={audioRef}
-            className="mt-4 w-full"
-            src={`${BASE_API_URL}${finalResponse.speech_url}?t=${Date.now()}`}
-            controls
-            autoPlay
-          />
+          {finalResponse.speech_url && (
+            <audio
+              ref={audioRef}
+              className="mt-4 w-full"
+              src={`${BASE_API_URL}${finalResponse.speech_url}?t=${Date.now()}`}
+              controls
+              autoPlay
+            />
+          )}
         </div>
       )}
       <div className="mt-12 p-4 max-w-full bg-white box-lg shadow-lg w-full text-center dark:bg-slate-600 dark:text-white">

@@ -4,21 +4,49 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Ignore virtual environments
+.venv/
+env/
+*.egg-info/
+*.dist-info/
+
 # Ignore local environment files
 .env
 *.env
+.envrc
 
 # Ignore Docker-specific artifacts
 .Dockerfile.swp
+docker-compose.override.yml
 .dockerignore
 
 # Ignore IDE and editor configs
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # Ignore logs
 *.log
+logs/
+debug.log
 
-# Ignore audio files in the image, but allow runtime access via volume
+# Ignore build artifacts
+*.bak
+*.tmp
+*.cache
+*.pytest_cache/
+
+# Ignore node_modules in frontend
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore static audio files in the image but allow runtime access via volume
 /static/audio/*
-!static/audio/.keep  # Optional: keep directory structure
+!static/audio/.keep  # Ensures the directory exists if needed

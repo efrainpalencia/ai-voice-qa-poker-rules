@@ -4,20 +4,23 @@ services:
       context: ./backend/app
     ports:
       - "5000:5000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - TDA_FILE_PATH=/app/static/assets/tda_rules.pdf
-      - HWHR_FILE_PATH=/app/static/assets/hwhr_rules.pdf
     volumes:
       - ./backend/app/static/audio:/app/static/audio
+    restart: always
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TDA_FILE_PATH=${TDA_FILE_PATH}
+      - HWHR_FILE_PATH=${HWHR_FILE_PATH}
 
   frontend:
     build:
       context: ./frontend/ai-voice--app
     ports:
-      - "5173:5173"
+      - "80:80"
+    command: [ "npm", "run", "preview", "--", "--host", "0.0.0.0" ]
+    restart: always
     environment:
-      - VITE_API_URL=http://localhost:5000/api
-      - VITE_BASE_API_URL=http://localhost:5000/api
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_BASE_API_URL=${VITE_BASE_API_URL}
     depends_on:
       - backend
