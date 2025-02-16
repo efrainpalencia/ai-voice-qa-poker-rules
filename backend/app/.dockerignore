@@ -1,0 +1,24 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local environment files
+.env
+*.env
+
+# Ignore Docker-specific artifacts
+.Dockerfile.swp
+.dockerignore
+
+# Ignore IDE and editor configs
+.vscode/
+.idea/
+
+# Ignore logs
+*.log
+
+# Ignore audio files in the image, but allow runtime access via volume
+/static/audio/*
+!static/audio/.keep  # Optional: keep directory structure
