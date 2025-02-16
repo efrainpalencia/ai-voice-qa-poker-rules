@@ -24,22 +24,6 @@ const App: React.FC = () => {
   const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const markdown = `
-            You can ask about a specific rule by; number, term, or category.
-            Poker Rules Assistant will provide you with the definition along with an example.
-            Ask for a list of the content if you are unsure of what to search for.
-            
-            Try describing a scenario and Poker Rules Assistant will do its best to provide 
-            you with the proper ruling. Just be sure to include the following: 
-            
-            * The poker game along with the stakes 
-            * A detailed order of events 
-            * The question to be answered
-            
-            To ask a question, simply press the "Start Recording" button below.
-            Press the "Stop Recording" after you are finished.
-  `;
-
   const startRecording = async () => {
     resetAudioState(setFinalResponse, setAudioKey, audioRef);
 
@@ -107,13 +91,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 pb-6 dark:bg-slate-800 dark:text-white px-4 overflow-x-hidden">
+    <div className="flex flex-col items-center justify-center w-full h-auto min-h-screen bg-gray-100 pb-0 pl-0 pr-0 pt-0 dark:bg-slate-800 dark:text-white px-4 overflow-x-hidden">
       {/* Hero Image */}
-      <div className="w-full flex justify-center mb-4">
+      <div className="w-full h-auto flex justify-center mb-4">
         <img
           src="/hero_img.png"
           alt="Poker Logo"
-          className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl rounded"
+          className="w-full h-auto  rounded"
         />
       </div>
 
@@ -124,17 +108,50 @@ const App: React.FC = () => {
       />
 
       {/* Instructions */}
-      {error ? (
-        <p className="mt-3 text-red-500 text-center text-sm sm:text-base">
-          {error}
-        </p>
-      ) : (
-        <div className="mt-3 text-sm sm:text-base">
-          <ReactMarkdown className="prose dark:prose-invert max-w-full">
-            {markdown}
-          </ReactMarkdown>
-        </div>
-      )}
+      <div className="mt-6 p-4 w-full max-w-xl">
+        {error ? (
+          <p className="mt-3 text-red-500 text-center text-sm sm:text-base">
+            {error}
+          </p>
+        ) : (
+          <div className="mt-3 w-full max-w-xl text-sm sm:text-base">
+            <p>
+              You can ask about a specific rule by number, term, or category.
+              Poker Rules Assistant will provide you with the definition along
+              with an example. Ask for a list of the content if you are unsure
+              of what to search for.
+            </p>
+            <br />
+            <p>
+              Try describing a scenario and Poker Rules Assistant will do its
+              best to provide you with the proper ruling. It may help to include
+              relevant information such as:
+            </p>
+            <br />
+            <ol className="list-disc list-inside">
+              <li>The poker game along with the stakes </li>
+              <li>A detailed order of events</li>
+              <li>The question to be answered</li>
+            </ol>
+            <br />
+            <p>
+              <strong className="mr-2">NOTE:</strong>
+            </p>
+            <span className="italic">
+              Complex scenarios may need to be focused down into seperate
+              questions.
+            </span>
+
+            <br />
+            <br />
+            <p>
+              To ask a question, simply press the "Start Recording" button
+              below. Then, press the "Stop Recording" button after you are
+              finished.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Recording Controls (Centered) */}
       <div className="mt-4 w-full flex justify-center">
@@ -170,6 +187,9 @@ const App: React.FC = () => {
           />
         </div>
       )}
+      <div className="mt-12 p-4 max-w-full bg-white box-lg shadow-lg w-full text-center dark:bg-slate-600 dark:text-white">
+        <span>©2024 EFSOLVES</span>
+      </div>
     </div>
   );
 };

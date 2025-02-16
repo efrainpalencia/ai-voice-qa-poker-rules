@@ -2,44 +2,25 @@ import openai
 import os
 import logging
 import subprocess
-import PyPDF2
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
-from config import Config
+from flask import Blueprint, request, jsonify, send_file
 
-app = Flask(__name__)
-CORS(app)
-
-openai.api_key = Config.OPENAI_API_KEY
-logging.basicConfig(level=logging.INFO)
-
-# ✅ Ensure 'static/' Directory Exists
-AUDIO_DIR = "audio"
-os.makedirs(AUDIO_DIR, exist_ok=True)
-
-# ✅ Load Multiple Rulebooks
-RULEBOOKS = {}
+api = Blueprint("api", __name__)
 
 
-def load_rulebook(name, path):
-    """Loads a rulebook from a PDF file."""
-    try:
-        with open(path, "rb") as pdf_file:
-            reader = PyPDF2.PdfReader(pdf_file)
-            RULEBOOKS[name] = " ".join(
-                [page.extract_text() for page in reader.pages if page.extract_text()])
-            logging.info(f"📖 {name} loaded successfully.")
-    except Exception as e:
-        logging.error(f"❌ Error loading {name}: {str(e)}")
+@api.record
+def record_setup(state):
+    """Access RULEBOOKS and AUDIO_DIR from app.config."""
+    global RULEBOOKS, AUDIO_DIR
+    RULEBOOKS = state.app.config.get("RULEBOOKS")
+    AUDIO_DIR = state.app.config.get("AUDIO_DIR")
+
+    # Ensure audio directory exists
+    if not os.path.exists(AUDIO_DIR):
+        os.makedirs(AUDIO_DIR, exist_ok=True)
+        logging.info(f"📂 Created audio directory: {AUDIO_DIR}")
 
 
-# 🔥 Load Rulebooks at Startup
-load_rulebook("poker_tda", Config.TDA_FILE_PATH)
-# Path to alternate rulebook
-load_rulebook("poker_hwhr", Config.HWHR_FILE_PATH)
-
-
-@app.route("/record", methods=["POST"])
+@api.route("/record", methods=["POST"])
 def record():
     """Handles audio file upload, transcribes it, generates AI response, and returns TTS audio."""
     rulebook_key = request.form.get("rulebook", "poker_tda")
@@ -69,7 +50,17 @@ def record():
         💡 **Instructions**:
         Your job is to assist these professionals. At times you may be asked to directly 
         reference a rule. At times you may be given a scenario, in which case you may have to 
-        use inference to find the solution.
+        use inference to find the solution. 
+        
+        If the rule does not exist, then you may respond with:
+        That rule does not exist in this rulebook. You may ask to see a full list of the rules.
+
+        If a scenario is given to you that is too complex, then you may respond with:
+        Please break down the scenario into smaller questions. 
+
+        If the question has no relevance to poker, then you may respond with:
+        I'm sorry, I can only assist you with poker related content provided by the 
+        selected rulebook.
 
         - **Use Markdown-style formatting** for clarity.  
         - **Respond in a structured format** using:
@@ -79,6 +70,8 @@ def record():
         - **Examples and clarifications** where necessary.  
         - Keep answers **concise yet informative**.
         - approprate spacing and line height for improved readability.
+
+        🔔 **Important**: Only use the information from the rulebook.
         
         🎯 **Example Format**:
         
@@ -87,7 +80,6 @@ def record():
         - **Definition**: Directional play ensures actions follow the natural order of gameplay.  
         - **Example**: If Player A acts out of turn, their action may be binding depending on the scenario.
         
-        🔔 **Important**: Only use the information from the rulebook.
         
         Please answer the user's question below:  
          📖 **User's Question**: "{text}"
@@ -147,7 +139,7 @@ def record():
 # ✅ **Serve the TTS Audio File**
 
 
-@app.route("/tts/<filename>", methods=["GET"])
+@api.route("/tts/<filename>", methods=["GET"])
 def serve_tts_audio(filename):
     """Serve the generated TTS audio file."""
     audio_path = os.path.join(AUDIO_DIR, filename)
@@ -159,7 +151,3 @@ def serve_tts_audio(filename):
     else:
         logging.error(f"❌ TTS file not found: {audio_path}")
         return jsonify({"error": "Audio file not found"}), 404
-
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)

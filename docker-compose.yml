@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./backend/app
+    ports:
+      - "5000:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TDA_FILE_PATH=/app/static/assets/tda_rules.pdf
+      - HWHR_FILE_PATH=/app/static/assets/hwhr_rules.pdf
+    volumes:
+      - ./backend/app/static/audio:/app/static/audio
+
+  frontend:
+    build:
+      context: ./frontend/ai-voice--app
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - VITE_BASE_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
