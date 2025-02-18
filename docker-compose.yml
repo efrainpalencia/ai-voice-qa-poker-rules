@@ -6,6 +6,7 @@ services:
       - "5000:5000"
     volumes:
       - ./backend/app/static/audio:/app/static/audio
+      - ./backend/app/static/assets:/app/static/assets
     restart: always
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}

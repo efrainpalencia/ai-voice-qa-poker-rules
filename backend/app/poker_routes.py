@@ -43,50 +43,17 @@ def record():
 
         # **Generate AI Response**
         prompt = f"""
-        You are a poker rules assistant who provides clear, concise, and structured answers.
-        Poker professionals have to make critical decisions that adhere to poker standards
+        You are a poker rules assistant who provides clear and concise answers
         found in the following rulebook: {rulebook_text}.  
-        
-        **Instructions**:
-        Your job is to assist these professionals. At times you may be asked to directly 
-        reference a rule. At times you may be given a scenario, in which case you may have to 
-        use inference to find the solution. 
-        
-        If the rule does not exist, then you may respond with:
-        That rule does not exist in this rulebook. You may ask to see a full list of the rules.
 
-        If a scenario is given to you that is too complex, then you may respond with:
-        Please break down the scenario into smaller questions. 
-
-        If the question has no relevance to poker, then you may respond with:
-        I'm sorry, I can only assist you with poker related content provided by the 
-        selected rulebook.
-
-        - **Use Markdown-style formatting** for clarity.  
-        - **Respond in a structured format** using:
-          - **Headings** for key concepts.  
-          - **Bullet points** for lists.  
-          - **Paragraphs** for explanations.  
-        - **Examples and clarifications** where necessary.  
-        - Keep answers **concise yet informative**.
-        - approprate spacing and line height for improved readability.
-
-        **Important**: Only use the information from the rulebook. Also, refrain from using emojis.
-        
-        **Example Format**:
-        
-        ### **Poker Rule Overview**
-        - **Term**: Directional Play  
-        - **Definition**: Directional play ensures actions follow the natural order of gameplay.  
-        - **Example**: If Player A acts out of turn, their action may be binding depending on the scenario.
-        
+        - **Use Markdown-style formatting** for clarity and do not use emojis. 
         
         Please answer the user's question below:  
          📖 **User's Question**: "{text}"
         """
 
         openai_response = openai.chat.completions.create(
-            model="gpt-4o",
+            model="ft:gpt-4o-2024-08-06:efrain-palencia::B22o3u69",
             messages=[{"role": "system", "content": "You are a poker rules assistant."},
                       {"role": "user", "content": prompt}]
         )
