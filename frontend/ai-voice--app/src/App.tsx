@@ -164,7 +164,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Loading Spinner */}
-      {loading && <Spinner className="mt-4" />}
+      {loading && <Spinner />}
 
       {/* Display Response */}
       {finalResponse && (
