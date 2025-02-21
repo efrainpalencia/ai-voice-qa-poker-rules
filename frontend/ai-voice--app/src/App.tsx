@@ -91,13 +91,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-auto min-h-screen bg-gray-100 pb-0 pl-0 pr-0 pt-0 dark:bg-slate-800 dark:text-white px-4 overflow-x-hidden">
+    <div className="flex flex-col items-center justify-center w-full h-auto min-h-screen px-0 bg-gray-100 pb-0 dark:bg-slate-800 dark:text-white overflow-x-hidden">
       {/* Hero Image */}
       <div className="w-full h-auto flex justify-center mb-4">
         <img
-          src="/hero_img.png"
+          src="/ai-poker-hero-img.png"
           alt="Poker Logo"
-          className="w-full h-auto  rounded"
+          className="w-full h-auto rounded"
         />
       </div>
 
@@ -110,50 +110,51 @@ const App: React.FC = () => {
       {/* Instructions */}
       <div className="mt-6 p-4 w-full max-w-xl">
         {error ? (
-          <p className="mt-3 text-red-500 text-center text-sm sm:text-base">
-            {error}
-          </p>
+          <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
+            <strong>Error:</strong> {error}
+          </div>
         ) : (
           <div className="mt-3 w-full max-w-xl text-sm sm:text-base">
             <p>
-              You can ask about a specific rule by number, term, or category.
-              Poker Rules Assistant will provide you with the definition along
-              with an example. Ask for a list of the content if you are unsure
-              of what to search for.
+              <strong className="text-yellow-300">
+                Are you unsure about a poker rule?
+              </strong>
+              <br />
+              Poker Rules Assistant will provide you with the answer directly
+              from the selected rulebook.
             </p>
             <br />
             <p>
-              Try describing a scenario and Poker Rules Assistant will do its
-              best to provide you with the proper ruling. It may help to include
+              All you have to do is describe a scenario and Poker Rules
+              Assistant will provide you with the appropriate rule definition
+              along with how it applies to your scenario. It may help to include
               relevant information such as:
             </p>
             <br />
-            <ol className="list-disc list-inside">
-              <li>The poker game along with the stakes </li>
+            <ul className="list-disc list-inside">
+              <li>The poker game along with the stakes if applicable</li>
               <li>A detailed order of events</li>
               <li>The question to be answered</li>
+            </ul>
+            <br />
+            <p className="italic">
+              (e.g.) Can you show me a title of all the rules?
+            </p>
+            <br />
+            <p>
+              <strong className="text-yellow-300">To get started:</strong>
+            </p>
+            <br />
+            <ol className="list-decimal list-inside">
+              <li>Press "Star Recording"</li>
+              <li>Ask a question</li>
+              <li>Press "Stop Recording"</li>
             </ol>
-            <br />
-            <p>
-              <strong className="mr-2">NOTE:</strong>
-            </p>
-            <span className="italic">
-              Complex scenarios may need to be focused down into separate
-              questions.
-            </span>
-
-            <br />
-            <br />
-            <p>
-              To ask a question, simply press the "Start Recording" button
-              below. Then, press the "Stop Recording" button after you are
-              finished.
-            </p>
           </div>
         )}
       </div>
 
-      {/* Recording Controls (Centered) */}
+      {/* Recording Controls */}
       <div className="mt-4 w-full flex justify-center">
         <RecordingControls
           recording={recording}
@@ -163,11 +164,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Loading Spinner */}
-      {loading && (
-        <div className="mt-4">
-          <Spinner />
-        </div>
-      )}
+      {loading && <Spinner className="mt-4" />}
 
       {/* Display Response */}
       {finalResponse && (
@@ -189,8 +186,9 @@ const App: React.FC = () => {
           )}
         </div>
       )}
-      <div className="mt-12 p-4 max-w-full bg-white box-lg shadow-lg w-full text-center dark:bg-slate-600 dark:text-white">
-        <span>©2024 EFSOLVES</span>
+
+      <div className="mt-12 max-w-full bg-white box-lg shadow-lg w-full text-center dark:bg-teal-800 dark:text-white">
+        <span>©2025 EFAITECH SOLUTIONS</span>
       </div>
     </div>
   );

@@ -14,11 +14,11 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
   return (
     <button
       onClick={recording ? stopRecording : startRecording}
-      className={`mt-6 px-6 py-3 text-white font-semibold rounded-lg shadow-md transition 
+      className={`mt-6 px-6 py-3 text-slate-600 font-semibold rounded-lg shadow-md transition 
         ${
           recording
             ? "bg-red-600 hover:bg-red-700 focus:ring-red-300"
-            : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-300"
+            : "bg-yellow-300 hover:bg-yellow-400 focus:ring-yellow-200"
         }`}
     >
       {recording ? "Stop Recording" : "Start Recording"}

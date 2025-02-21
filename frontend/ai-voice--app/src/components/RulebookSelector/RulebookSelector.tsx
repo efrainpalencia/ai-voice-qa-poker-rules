@@ -10,10 +10,10 @@ const RulebookSelector: React.FC<RulebookSelectorProps> = ({
   setSelectedRulebook,
 }) => {
   return (
-    <div>
+    <div className="justify-items-center">
       <label
         htmlFor="rulebook"
-        className="block text-gray-700 dark:text-white font-semibold mb-4 mt-8"
+        className="block text-lg text-gray-700 dark:text-white font-semibold mb-4 mt-8"
       >
         Select a Rulebook:
       </label>
@@ -24,8 +24,13 @@ const RulebookSelector: React.FC<RulebookSelectorProps> = ({
         onChange={(e) => setSelectedRulebook(e.target.value)}
       >
         <option value="poker_tda">TDA Poker Rulebook</option>
-        <option value="poker_hwhr">HWHR Poker Rulebook</option>
+        <option value="poker_hwhr" disabled={true}>
+          Hollywood Hard Rock Poker Rulebook
+        </option>
       </select>
+      <div className="text-red-500 italic p-4">
+        Hollywood Hard Rock Poker Rulebook temporarily unavailable
+      </div>
     </div>
   );
 };
