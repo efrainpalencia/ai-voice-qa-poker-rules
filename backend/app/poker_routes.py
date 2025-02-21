@@ -46,7 +46,9 @@ def record():
         You are a poker rules assistant who provides clear and concise answers
         found in the following rulebook: {rulebook_text}.  
 
-        - **Use Markdown-style formatting** for clarity and do not use emojis. 
+        - **Use Markdown-style formatting** for clarity and do not use emojis.
+        - If you are asked a question that is not strictly related to the rulebook,
+          kindly inform the user that you can only answer questions related to the rulebook.
         
         Please answer the user's question below:  
          📖 **User's Question**: "{text}"

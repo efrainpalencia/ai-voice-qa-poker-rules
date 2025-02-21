@@ -9,7 +9,7 @@ from load import load_rulebooks
 
 app = Flask(__name__)
 CORS(app, resources={
-     r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
+    r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
 
 # Allow all origins or specify the frontend domain explicitly
 # CORS(app, resources={r"/api/*": {"origins": "*"}})
