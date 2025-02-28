@@ -23,14 +23,14 @@ const RulebookSelector: React.FC<RulebookSelectorProps> = ({
         value={selectedRulebook}
         onChange={(e) => setSelectedRulebook(e.target.value)}
       >
-        <option value="poker_tda">TDA Poker Rulebook</option>
-        <option value="poker_hwhr" disabled={true}>
-          Hollywood Hard Rock Poker Rulebook
+        <option value="poker_tda">TDA Poker Rules</option>
+        <option value="poker_hwhr_rules">
+          Seminole Gaming General Rules & Poker Games
+        </option>
+        <option value="poker_hwhr_procedures">
+          Seminole Gaming General Procedures and Etiquette
         </option>
       </select>
-      <div className="text-red-500 italic p-4">
-        Hollywood Hard Rock Poker Rulebook temporarily unavailable
-      </div>
     </div>
   );
 };

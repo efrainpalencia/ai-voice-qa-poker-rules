@@ -3,6 +3,7 @@ import os
 import logging
 import subprocess
 from flask import Blueprint, request, jsonify, send_file
+from extensions import limiter
 
 api = Blueprint("api", __name__)
 
@@ -21,6 +22,7 @@ def record_setup(state):
 
 
 @api.route("/record", methods=["POST"])
+@limiter.limit("3 per minute")  # Limits users to 3 requests per minute
 def record():
     """Handles audio file upload, transcribes it, generates AI response, and returns TTS audio."""
     rulebook_key = request.form.get("rulebook", "poker_tda")
@@ -44,7 +46,10 @@ def record():
         # **Generate AI Response**
         prompt = f"""
         You are a poker rules assistant who provides clear and concise answers
-        found in the following rulebook: {rulebook_text}.  
+        found in the following rulebook: {rulebook_text}.
+        (Note: When there is a raise on the table, if a player's amount to call the bet is less 
+        than the previous raise, then that player does not have the option to re-raise.
+        Therefore, that player may call or fold.) 
 
         - **Use Markdown-style formatting** for clarity and do not use emojis.
         - If you are asked a question that is not strictly related to the rulebook,
