@@ -21,6 +21,8 @@ services:
       - "80:80"
     command: [ "npm", "run", "preview", "--", "--host", "0.0.0.0" ]
     restart: always
+    env_file:
+      - ./frontend/ai-voice--app/.env # ✅ Explicitly specify the env file path
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - VITE_BASE_API_URL=${VITE_BASE_API_URL}

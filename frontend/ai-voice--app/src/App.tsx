@@ -116,13 +116,13 @@ const App: React.FC = () => {
             </p>
             <p>
               <br />
-              Poker Rules Assistant will provide you with the answer directly
-              from the selected rulebook.
+              Pocket Poker Pal will provide you with the answer directly from
+              the selected rulebook.
             </p>
             <br />
             <p>
               All you have to do is ask a question or describe a scenario and
-              Poker Pocket Pal will provide you with the appropriate rule
+              Pocket Poker Pal will provide you with the appropriate rule
               definition along with how it applies to your scenario. It may help
               to include relevant information such as:
             </p>
