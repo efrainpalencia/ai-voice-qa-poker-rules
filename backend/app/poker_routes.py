@@ -3,12 +3,9 @@ import os
 import logging
 import subprocess
 from flask import Blueprint, request, jsonify, send_file
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from extensions import limiter
 
 api = Blueprint("api", __name__)
-
-limiter = Limiter(get_remote_address, app=api, default_limits=["5 per minute"])
 
 
 @api.record
@@ -26,7 +23,6 @@ def record_setup(state):
 
 @api.route("/record", methods=["POST"])
 @limiter.limit("3 per minute")  # Limits users to 3 requests per minute
-@api.route("/record", methods=["POST"])
 def record():
     """Handles audio file upload, transcribes it, generates AI response, and returns TTS audio."""
     rulebook_key = request.form.get("rulebook", "poker_tda")

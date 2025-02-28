@@ -1,18 +1,24 @@
+from flask_limiter import Limiter
 import openai
 import os
 import logging
 from flask import Flask
 from flask_cors import CORS
+from flask_limiter.util import get_remote_address
 from config import Config
 from poker_routes import api
 from load import load_rulebooks
+from extensions import limiter
 
 app = Flask(__name__)
-# CORS(app, resources={
-#     r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
+CORS(app, resources={
+    r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
 
 # Allow all origins or specify the frontend domain explicitly
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# ✅ Attach limiter to app (AFTER creating app)
+limiter.init_app(app)
 
 # OpenAI API Key
 openai.api_key = Config.OPENAI_API_KEY
