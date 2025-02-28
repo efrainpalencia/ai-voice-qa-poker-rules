@@ -3,8 +3,12 @@ import os
 import logging
 import subprocess
 from flask import Blueprint, request, jsonify, send_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 api = Blueprint("api", __name__)
+
+limiter = Limiter(get_remote_address, app=api, default_limits=["5 per minute"])
 
 
 @api.record
@@ -20,6 +24,8 @@ def record_setup(state):
         logging.info(f"📂 Created audio directory: {AUDIO_DIR}")
 
 
+@api.route("/record", methods=["POST"])
+@limiter.limit("3 per minute")  # Limits users to 3 requests per minute
 @api.route("/record", methods=["POST"])
 def record():
     """Handles audio file upload, transcribes it, generates AI response, and returns TTS audio."""
@@ -44,7 +50,10 @@ def record():
         # **Generate AI Response**
         prompt = f"""
         You are a poker rules assistant who provides clear and concise answers
-        found in the following rulebook: {rulebook_text}.  
+        found in the following rulebook: {rulebook_text}.
+        (Note: When there is a raise on the table, if a player's amount to call the bet is less 
+        than the previous raise, then that player does not have the option to re-raise.
+        Therefore, that player may call or fold.) 
 
         - **Use Markdown-style formatting** for clarity and do not use emojis.
         - If you are asked a question that is not strictly related to the rulebook,

@@ -101,12 +101,6 @@ const App: React.FC = () => {
         />
       </div>
 
-      {/* Rulebook Selector */}
-      <RulebookSelector
-        selectedRulebook={selectedRulebook}
-        setSelectedRulebook={setSelectedRulebook}
-      />
-
       {/* Instructions */}
       <div className="mt-6 p-4 w-full max-w-xl">
         {error ? (
@@ -116,19 +110,21 @@ const App: React.FC = () => {
         ) : (
           <div className="mt-3 w-full max-w-xl text-sm sm:text-base">
             <p>
-              <strong className="text-yellow-300">
-                Are you unsure about a poker rule?
+              <strong className="text-yellow-300 text-lg">
+                Are you unsure about a poker rule or procedure?
               </strong>
+            </p>
+            <p>
               <br />
               Poker Rules Assistant will provide you with the answer directly
               from the selected rulebook.
             </p>
             <br />
             <p>
-              All you have to do is describe a scenario and Poker Rules
-              Assistant will provide you with the appropriate rule definition
-              along with how it applies to your scenario. It may help to include
-              relevant information such as:
+              All you have to do is ask a question or describe a scenario and
+              Poker Pocket Pal will provide you with the appropriate rule
+              definition along with how it applies to your scenario. It may help
+              to include relevant information such as:
             </p>
             <br />
             <ul className="list-disc list-inside">
@@ -138,11 +134,13 @@ const App: React.FC = () => {
             </ul>
             <br />
             <p className="italic">
-              (e.g.) Can you show me a title of all the rules?
+              (e.g.) Can you show me a list of the general poker rules?
             </p>
             <br />
             <p>
-              <strong className="text-yellow-300">To get started:</strong>
+              <strong className="text-yellow-300 text-lg">
+                To get started:
+              </strong>
             </p>
             <br />
             <ol className="list-decimal list-inside">
@@ -153,9 +151,14 @@ const App: React.FC = () => {
           </div>
         )}
       </div>
+      {/* Rulebook Selector */}
+      <RulebookSelector
+        selectedRulebook={selectedRulebook}
+        setSelectedRulebook={setSelectedRulebook}
+      />
 
       {/* Recording Controls */}
-      <div className="mt-4 w-full flex justify-center">
+      <div className="mt-10 w-full flex justify-center">
         <RecordingControls
           recording={recording}
           startRecording={startRecording}

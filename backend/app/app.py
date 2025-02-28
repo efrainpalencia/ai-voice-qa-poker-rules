@@ -8,11 +8,11 @@ from poker_routes import api
 from load import load_rulebooks
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
+# CORS(app, resources={
+#     r"/api/*": {"origins": ["https://ai-voice-qa-poker-rules.up.railway.app"]}})
 
 # Allow all origins or specify the frontend domain explicitly
-# CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # OpenAI API Key
 openai.api_key = Config.OPENAI_API_KEY
@@ -21,7 +21,8 @@ logging.basicConfig(level=logging.INFO)
 # Prepare file paths
 file_paths = {
     "poker_tda": Config.TDA_FILE_PATH,
-    "poker_hwhr": Config.HWHR_FILE_PATH,
+    "poker_hwhr_rules": Config.GENERAL_RULES_FILE_PATH,
+    "poker_hwhr_procedures": Config.GENERAL_PROCEDURES_FILE_PATH
 }
 
 # Load rulebooks
@@ -39,5 +40,5 @@ app.config["AUDIO_DIR"] = AUDIO_DIR
 app.register_blueprint(api, url_prefix="/api")
 
 # Debug mode
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
