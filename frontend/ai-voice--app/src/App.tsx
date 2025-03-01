@@ -134,7 +134,7 @@ const App: React.FC = () => {
             </ul>
             <br />
             <p className="italic">
-              (e.g.) Can you show me a list of the general poker rules?
+              (e.g.) Can you show me a list of the content in this rulebook?
             </p>
             <br />
             <p>
